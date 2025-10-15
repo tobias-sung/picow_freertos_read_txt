@@ -18,14 +18,8 @@ static void vUSBTask() {
 
     usbHandle = xTaskGetCurrentTaskHandle();
 
-    tusb_rhport_init_t dev_init = {
-        .role = TUSB_ROLE_DEVICE,
-        .speed = TUSB_SPEED_AUTO
-    };
-    tusb_init(BOARD_TUD_RHPORT, &dev_init);
-
     // RTOS forever loop
-    while (1) {
+    for (;;) {
         // put this thread to waiting state until there is new events
         tud_task();
 
@@ -38,7 +32,7 @@ void vWriteTask(){
     writeHandle = xTaskGetCurrentTaskHandle();
     for (;;){
         xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
-        
+        printf("Update WIFI.TXT (%s, %s, %s) \n", global_wifi.ssid, global_wifi.password, global_wifi.http_server);
         taskENTER_CRITICAL();
         wifisetting_write(&global_wifi);
         taskEXIT_CRITICAL();
@@ -60,10 +54,10 @@ void connect_wifi(){
         printf("Read HTTP server %s\n", wifi_setting.http_server); 
         
         //Connect to WiFi. Stops trying to reconnect after 5 failed attempts
-        while (cyw43_arch_wifi_connect_timeout_ms(wifi_setting.ssid, wifi_setting.password, CYW43_AUTH_WPA2_AES_PSK, 5000) && attempts < 3) {
+        /* while (cyw43_arch_wifi_connect_timeout_ms(wifi_setting.ssid, wifi_setting.password, CYW43_AUTH_WPA2_AES_PSK, 5000) && attempts < 3) {
             printf("Failed to connect to Wi-Fi. Retrying...\n");
             attempts++;
-        }
+        } */
     }
 
 }
@@ -86,7 +80,8 @@ void main() {
          printf("Failed to connect to Wi-Fi!\n");
     }
 
-    xTaskCreate(vUSBTask, "USB Task", 512, NULL, 1, NULL);
-    xTaskCreate(vWriteTask, "Write Task", 256, NULL, 1, NULL);
+    
+    xTaskCreate(vUSBTask, "USB Task", 1024, NULL, 1, NULL);
+    xTaskCreate(vWriteTask, "Write Task", 1024, NULL, 1, NULL);
     vTaskStartScheduler();
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PICO_BOARD pico_w)
+set(PICO_BOARD pico2_w)
 
 # Pull in SDK (must be before project)
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
@@ -23,6 +23,9 @@ add_executable(blink
 	wifi_setting.c
 )
 
+target_compile_definitions(blink PRIVATE
+  PICO_FLASH_ASSUME_CORE1_SAFE=1
+)
 
 target_include_directories(blink PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 

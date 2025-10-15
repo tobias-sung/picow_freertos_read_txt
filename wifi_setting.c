@@ -10,6 +10,17 @@ bool wifisetting_read(wifi_setting_t *setting) {
     return memcmp(setting->magic, WIFI_SETTING_MAGIC, sizeof(setting->magic)) == 0;
 }
 
+static void call_flash_range_erase(void *param) {
+    uint32_t offset = (uint32_t)param;
+    flash_range_erase(offset, FLASH_SECTOR_SIZE);
+}
+
+void call_flash_range_program(void *param) {
+    uint32_t offset = ((uintptr_t*)param)[0];
+    const uint8_t *data = (const uint8_t *)((uintptr_t*)param)[1];
+    flash_range_program(offset, data, FLASH_PAGE_SIZE);
+}
+
 void wifisetting_write(wifi_setting_t *setting) {
     uint8_t buffer[FLASH_PAGE_SIZE];
 
@@ -17,8 +28,11 @@ void wifisetting_write(wifi_setting_t *setting) {
     memcpy(setting->magic, WIFI_SETTING_MAGIC, sizeof(setting->magic));
     memcpy(buffer, setting, sizeof(wifi_setting_t));
 
-    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
-    flash_range_program(FLASH_TARGET_OFFSET, buffer, FLASH_PAGE_SIZE);
+    printf("Calling flash_range_erase() returned with: %d \n", flash_safe_execute(call_flash_range_erase, (void*)FLASH_TARGET_OFFSET, UINT32_MAX));
+    
+    uintptr_t params2[] = { FLASH_TARGET_OFFSET, (uintptr_t)buffer};
+    printf("Calling flash_range_program() returned with %d \n",flash_safe_execute(call_flash_range_program, params2, UINT32_MAX));
+
 }
 
 bool wifisetting_parse(wifi_setting_t *setting, const uint8_t *buffer, size_t buffer_len) {
